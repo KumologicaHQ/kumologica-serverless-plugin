@@ -31,7 +31,6 @@ class KumologicaPlugin {
       `Attaching handler to function: ${this.fnName} ...`
     );
     let fnObject = this.serverless.service.getFunction(this.fnName);
-    console.log(fnObject);
     fnObject.handler = `${LAMBDA_NAME}.${LAMBDA_HANDLER}`;
   }
 
