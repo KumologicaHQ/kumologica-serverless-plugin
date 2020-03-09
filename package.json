@@ -1,0 +1,15 @@
+{
+  "name": "kumologica-serverless-plugin",
+  "version": "1.0.0",
+  "description": "",
+  "main": "kumologica-serverless.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fs-extra": "^8.1.0",
+    "lodash": "^4.17.15"
+  }
+}
