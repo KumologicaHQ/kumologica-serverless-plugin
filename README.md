@@ -32,11 +32,37 @@ plugins:
 
 # Useful Commands
 
+To create new kumologica project with hello world flow:
+```
 sls create --template-url https://github.com/KumologicaHQ/serverless-templates/tree/master/helloworld-api --path helloworld-api
+```
+
+To deploy flow into aws account:
+
+```
 sls deploy --aws-profile personal
+```
+To see cloudformation scripts:
+
+```
+sls package -v
+```
+
+To run flow locally:
+```
 sls invoke -f helloworld-flow
+```
+
+To remove flow from aws account:
+
+```
 sls remove
+```
 
 # Nodes
 
-Location of your plugin during development will be in `.serverless_plugin`. For production, we will publish the module, and the normal install will be suffice.
+- For plugin development put absolute path to plugin sources in serverless.yml file
+
+- Another alternative is to create `.serverless_plugins` subdirectory inside project. 
+
+For production, we will publish the module, and the normal install will suffice.
