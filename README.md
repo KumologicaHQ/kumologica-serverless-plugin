@@ -14,7 +14,7 @@ provider:
   runtime: nodejs12.x
 
 functions:
-  demo-flow: // <-- name of your flow file (without .json extension)
+  demo-flow: # name of your flow file (without .json extension)
     events:
       - http:
           path: hello
@@ -22,8 +22,8 @@ functions:
 
 custom:
    kumologica:
-     inferIamRoles: true, // false by default
-     excludeTest: true    // false by default
+     inferIamPolicies: true # false by default
+     excludeTest: true      # false by default
 
 plugins:
   - kumologica-serverless
