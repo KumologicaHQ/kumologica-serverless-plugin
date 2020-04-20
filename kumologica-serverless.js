@@ -1,7 +1,10 @@
 // Version 1
 const _ = require('lodash');
 const fs = require('fs-extra');
+const path = require('path');
 const jp = require('jsonpath');
+const spawnSync = require('child_process').spawnSync;
+const rimraf = require('rimraf');
 
 const LAMBDA_NAME = 'lambda';
 const LAMBDA_FILE = `${LAMBDA_NAME}.js`;
@@ -16,6 +19,7 @@ class KumologicaPlugin {
     this.hooks = {
       'before:package:createDeploymentArtifacts': () => {
         this.addLambdaFile();
+        this.runNpm();
         this.packageLambda();
       },
       'before:package:compileFunctions': () => {
@@ -28,6 +32,29 @@ class KumologicaPlugin {
         this.addFlowPolicies();
       }
     };
+  }
+
+  runCommand(command, args) {
+    const result = spawnSync(command, args);
+    const stdout = result.stdout;
+    const sterr = result.stderr;
+    if (stdout) {
+      this.serverless.cli.log(stdout.toString());
+    }
+    if (sterr) {
+      this.serverless.cli.log(sterr.toString());
+    }
+
+    return { stdout, sterr };
+  }
+
+  runNpm() {
+    this.serverless.cli.log(`Running npm build ...`);
+    this.runCommand('npm', ['install', '--production']);
+
+    // Remove aws-sdk library as it is provided by aws nodejs runtime. 
+    // Reducing the resulting lambda zip file by more than 70%
+    rimraf.sync(path.join('.', 'node_modules', 'aws-sdk'));
   }
 
   attachHandlerToFunction() {
@@ -258,9 +285,9 @@ class KumologicaPlugin {
   cleanup() {
     this.serverless.cli.log(`Cleaning up temporary files...`);
     if (fs.existsSync(LAMBDA_FILE)) {
-      // fs.unlinkSync(LAMBDA_FILE);
       fs.removeSync(LAMBDA_FILE);
     }
+    rimraf.sync(path.join('.', 'node_modules'));
   }
 }
 
