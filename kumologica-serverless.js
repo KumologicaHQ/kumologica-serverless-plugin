@@ -9,15 +9,31 @@ const rimraf = require('rimraf');
 const LAMBDA_NAME = 'lambda';
 const LAMBDA_FILE = `${LAMBDA_NAME}.js`;
 const LAMBDA_HANDLER = 'handler';
+const DEPLOY_FLOW_NAME = '__flow.json';
 
 class KumologicaPlugin {
   constructor(serverless, options) {
     this.serverless = serverless;
     this.options = options;
     this.originalServicePath = this.serverless.config.servicePath;
+    this.fnName = this.pluckFnName(0); 
+    // get the first function that we found - TODO: Support for multi function needs to be added.
+    
+    this.inferIamPolicies = _.get(
+      this.serverless, 
+      'variables.service.custom.kumologica.inferIamPolicies', 
+      false);
+    
+    this.excludeTest = _.get(
+      this.serverless, 
+      'variables.service.custom.kumologica.excludeTest', 
+      false);
 
+    this.env = this.serverless.service.getFunction(this.fnName).environment;
+  
     this.hooks = {
       'before:package:createDeploymentArtifacts': () => {
+        this.parseFlow();
         this.addLambdaFile();
         this.runNpm();
         this.packageLambda();
@@ -38,14 +54,14 @@ class KumologicaPlugin {
     const result = spawnSync(command, args);
     const stdout = result.stdout;
     const sterr = result.stderr;
+    
     if (stdout) {
       this.serverless.cli.log(stdout.toString());
     }
+    
     if (sterr) {
       this.serverless.cli.log(sterr.toString());
     }
-
-    return { stdout, sterr };
   }
 
   runNpm() {
@@ -65,16 +81,21 @@ class KumologicaPlugin {
     fnObject.handler = `${LAMBDA_NAME}.${LAMBDA_HANDLER}`;
   }
 
-  addLambdaFile() {
-    this.serverless.cli.log(`Generating Lambda file: ${LAMBDA_FILE} ...`);
-    this.fnName = this.pluckFnName(0); // get the first function that we found - TODO: Support for multi function needs to be added.
-    let lambdaContent = this.generateLambdaContent(this.fnName);
-    fs.writeFileSync(LAMBDA_FILE, lambdaContent);
+  parseFlow() {
+    this.flow = this.readFlow();
+
+    if (this.excludeTest) {
+      this.flow = this.flow.filter(f => f.z != "test.flow");
+    } else {
+      this.serverless.cli.log(`Skipping flow test exclusion, excludeTest not set or false`);
+    }
+    this.writeFlow();
   }
 
-  getEnvironmentVariables() {
-    const fnObject = this.serverless.service.getFunction(this.fnName);
-    return fnObject.environment;
+  addLambdaFile() {
+    this.serverless.cli.log(`Generating Lambda file: ${LAMBDA_FILE} ...`);
+    let lambdaContent = this.generateLambdaContent();
+    fs.writeFileSync(LAMBDA_FILE, lambdaContent);
   }
 
   validNodeType(node) {
@@ -88,11 +109,9 @@ class KumologicaPlugin {
 
     this.findLambdaRole(); 
     
-    let nodes = this.readFlow().filter(node => this.validNodeType(node));
+    let nodes = this.flow.filter(node => this.validNodeType(node));
 
-    this.env = this.getEnvironmentVariables();
-
-    if (!_.get(this.serverless, 'variables.service.custom.kumologica.inferIamPolicies', false)) {
+    if (!this.inferIamPolicies) {
       this.serverless.cli.log(`Skipping flow policies, inferIamPolicies not set or false`);
       return;
     }
@@ -179,6 +198,11 @@ class KumologicaPlugin {
     return nodes;
   }
 
+  writeFlow() {
+    fs.writeFileSync(`${DEPLOY_FLOW_NAME}`, JSON.stringify(this.flow));
+    // let exception flow
+  }
+
   // 
   // Function allows the storage of aws resource identifier (arn or other)
   // in either:
@@ -242,11 +266,11 @@ class KumologicaPlugin {
     };
   }
 
-  generateLambdaContent(fnName) {
+  generateLambdaContent() {
     return `
       'use strict';
       const { LambdaFlowBuilder } = require('@kumologica/runtime');
-      const lambdaFlow = new LambdaFlowBuilder('${fnName}.json');
+      const lambdaFlow = new LambdaFlowBuilder('${DEPLOY_FLOW_NAME}');
       exports.${LAMBDA_HANDLER} = lambdaFlow.handler;
       `;
   }
@@ -273,12 +297,13 @@ class KumologicaPlugin {
   }
 
   packageLambda() {
-    this.serverless.cli.log(`Including ${LAMBDA_FILE} into package...`);
+    this.serverless.cli.log(`Including ${LAMBDA_FILE} and ${DEPLOY_FLOW_NAME} into package...`);
 
     if (!_.get(this.serverless.service, 'package.include')) {
       _.set(this.serverless.service, 'package.include', []);
     }
 
+    this.serverless.service.package.include.push(DEPLOY_FLOW_NAME);
     this.serverless.service.package.include.push(LAMBDA_FILE);
   }
 
@@ -288,6 +313,7 @@ class KumologicaPlugin {
       fs.removeSync(LAMBDA_FILE);
     }
     rimraf.sync(path.join('.', 'node_modules'));
+    fs.removeSync(`${DEPLOY_FLOW_NAME}`);
   }
 }
 
