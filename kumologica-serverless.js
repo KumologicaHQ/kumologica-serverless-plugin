@@ -16,8 +16,7 @@ class KumologicaPlugin {
     this.serverless = serverless;
     this.options = options;
     this.originalServicePath = this.serverless.config.servicePath;
-    this.fnName = this.pluckFnName(0); 
-    // get the first function that we found - TODO: Support for multi function needs to be added.
+    this.fnName = this.pluckFnName(0); // get the first function that we found - TODO: Support for multi function needs to be added.
     
     this.inferIamPolicies = _.get(
       this.serverless, 
@@ -30,7 +29,7 @@ class KumologicaPlugin {
       false);
 
     this.env = this.serverless.service.getFunction(this.fnName).environment;
-  
+
     this.hooks = {
       'before:package:createDeploymentArtifacts': () => {
         this.parseFlow();
@@ -89,7 +88,7 @@ class KumologicaPlugin {
     } else {
       this.serverless.cli.log(`Skipping flow test exclusion, excludeTest not set or false`);
     }
-    this.writeFlow();
+    fs.writeFileSync(DEPLOY_FLOW_NAME, JSON.stringify(this.flow));
   }
 
   addLambdaFile() {
@@ -104,17 +103,27 @@ class KumologicaPlugin {
       && ['Rekognition', 'S3', 'SQS', 'Cloudwatch', 'Dynamo DB', 'SNS', 'SES', 'SSM'].includes(node.type);
   }
 
+  //
+  // If inferIamPolicies is set to true then all relevant aws permissions are added
+  // to the iam role policies.
+  // Each aws outbound note is inspected and correct actions and resources added to
+  // the policies belonging to generated role.
+  // The above only applies if aws resources are explicitly specifed as string values
+  // in node properties or as references to lambda environment variables. In second case
+  // the environment variables must be present in serverless.yml
+  // 
   addFlowPolicies() {
-    this.serverless.cli.log(`Adding flow policies to iam role of function: ${this.fnName} ...`);
-
-    this.findLambdaRole(); 
-    
-    let nodes = this.flow.filter(node => this.validNodeType(node));
 
     if (!this.inferIamPolicies) {
       this.serverless.cli.log(`Skipping flow policies, inferIamPolicies not set or false`);
       return;
     }
+
+    this.serverless.cli.log(`Adding flow policies to iam role of function: ${this.fnName} ...`);
+
+    this.findLambdaRole(); 
+
+    let nodes = this.flow.filter(node => this.validNodeType(node));
 
     for (var i=0; i<nodes.length; i++) {
 
@@ -129,43 +138,43 @@ class KumologicaPlugin {
           }
 
           let tableName = tableParts[5].replace('table/', '');
-          this.updatePolicy(`KumologicaDynamoDbPolicy${tableName}`, `dynamodb:${nodes[i].operation}`, tableArn);
+          this.updatePolicy(`KLDDB${tableName}`, `dynamodb:${nodes[i].operation}`, tableArn);
           break;
         
         case 'SQS':
           let queueArn = this.mapValue(nodes[i].QueueUrlType, nodes[i].QueueArn);
           let queueName = queueArn.split(":")[5];
-          this.updatePolicy(`KumologicaSQSPolicy${queueName}`, `sqs:${nodes[i].operation}`, queueArn);
+          this.updatePolicy(`KLSQS${queueName}`, `sqs:${nodes[i].operation}`, queueArn);
           break;
 
         case 'SNS':
           const topic = this.mapValue(nodes[i].publishTopicType, nodes[i].publishTopic);
-          this.updatePolicy(`KumologicaSNSPolicy${topic}`, `sns:${nodes[i].operation}`, topic);
+          this.updatePolicy(`KLSNS${topic}`, `sns:${nodes[i].operation}`, topic);
           break;
 
         case 'SES':
-          this.updatePolicy(`KumologicaSESPolicy`, `ses:${nodes[i].operation}`, '*');
+          this.updatePolicy(`KLSES`, `ses:${nodes[i].operation}`, '*');
           break;
         
         case 'SSM':
           const key = this.mapValue(nodes[i].KeyType, nodes[i].Key);
           const ssmArn = `arn:aws:ssm:${AWS.config.region}:${AWS.config.accountId}:parameter/${key}`;
-          this.updatePolicy(`KumologicaSSMPolicy${key}`, `ssm:${nodes[i].operation}`, ssmArn);
+          this.updatePolicy(`KLSSM${key}`, `ssm:${nodes[i].operation}`, ssmArn);
           break;
       
         case 'S3':
           let bucketName = this.mapValue(nodes[i].BucketType, nodes[i].Bucket);
           const bucketArn = `arn:aws:s3:::${bucketName}/*`;
-          this.updatePolicy(`KumologicaS3Policy${bucketName}`, `s3:${nodes[i].operation}`, bucketArn);
+          this.updatePolicy(`KLS3${bucketName}`, `s3:${nodes[i].operation}`, bucketArn);
           break;
       
         case 'Cloudwatch':
           let source = this.mapValue(nodes[i].SourceType, nodes[i].Source);
-          this.updatePolicy(`KumologicaCloudwatchEventPolicy${source}`, `event:${nodes[i].operation}`, source);
+          this.updatePolicy(`KLCWE${source}`, `event:${nodes[i].operation}`, source);
           break;
         
         case 'Rekognition':
-          this.updatePolicy(`KumologicaRekognitionPolicy${nodes[i].CollectionId}`, `rekognition:${nodes[i].operation}`, nodes[i].CollectionId);
+          this.updatePolicy(`KLR${nodes[i].CollectionId}`, `rekognition:${nodes[i].operation}`, nodes[i].CollectionId);
           break;
 
         default:
@@ -174,6 +183,10 @@ class KumologicaPlugin {
     }
   }
 
+  // 
+  // This can only be called once cloud formation template has been
+  // generated by serverless 
+  //
   findLambdaRole() {
     this.lambdaRole = 
       this.serverless
@@ -196,11 +209,6 @@ class KumologicaPlugin {
     }
 
     return nodes;
-  }
-
-  writeFlow() {
-    fs.writeFileSync(`${DEPLOY_FLOW_NAME}`, JSON.stringify(this.flow));
-    // let exception flow
   }
 
   // 
