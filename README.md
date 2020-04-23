@@ -52,6 +52,10 @@ Serverless: Plugin not found in serverless registry, continuing to install
 Serverless: Installing plugin "kumologica-serverless-plugin@latest" (this might take a few seconds...)
 Serverless: Successfully installed "kumologica-serverless-plugin@latest"
 ```
+## Development
+
+Download [Kumologica Designer](https://kumologica.com/download.html) to edit flow, implement business logic and unit tests. This is the only tool you will need to build serverless integrations to run on your cloud.
+No credit cards. No trials. Free to download and use it.
 
 ## Deployment
 
@@ -81,8 +85,6 @@ custom:
    kumologica:
     excludeTest: true      # false by default
 ```
-
-## Deployment
 
 To deploy flow into aws account use serverless deploy command, for example:
 
@@ -138,6 +140,6 @@ custom:
      excludeTest: true      # false by default
 
 plugins:
-  - kumologica-serverless
+  - kumologica-serverless-plugin
 
 ```

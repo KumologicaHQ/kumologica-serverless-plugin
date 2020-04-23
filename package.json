@@ -5,7 +5,7 @@
   "author": "Kumologica.com, contact@kumologica.com",
   "homepage": "https://github.com/KumologicaHQ/kumologica-serverless-plugin",
   "keywords": ["kumologica", "serverless", "aws", "lambda", "serverless plugin"],
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Provides Serverless support for Kumologica Flows",
   "main": "kumologica-serverless.js",
   "scripts": {
