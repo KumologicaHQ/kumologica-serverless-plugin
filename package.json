@@ -3,7 +3,9 @@
   "productName": "Kumologica Serverless Plugin",
   "copyright": "Copyright 2020 Kumologica.com.",
   "author": "Kumologica.com, contact@kumologica.com",
-  "version": "1.0.1",
+  "homepage": "https://github.com/KumologicaHQ/kumologica-serverless-plugin",
+  "keywords": ["kumologica", "serverless", "aws", "lambda", "serverless plugin"],
+  "version": "1.0.3",
   "description": "Provides Serverless support for Kumologica Flows",
   "main": "kumologica-serverless.js",
   "scripts": {

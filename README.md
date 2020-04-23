@@ -12,28 +12,46 @@ Follow instructions from [get-npm](https://www.npmjs.com/get-npm)
 
 Follow instructions from [Get started with Serverless Framework Open Source & AWS](https://serverless.com/framework/docs/getting-started/)
  
-**Install kumologica-serverless plugin**
-
-Once serverless framework has been installed, run the following command in your terminal:
-``` bash
-serverless plugin install --name kumologica-serverless
-```
-Successful installation should produce output similar to below:
-```
-TODO: add output here
-```
-
 ## Sample project
 
-Create new kumologica project with hello world flow:
+**Kumologica Serverless Template**
+
+Create new kumologica project with hello world flow using serverless template:
 
 ``` bash
 sls create --template-url https://github.com/KumologicaHQ/serverless-templates/tree/master/helloworld-api --path helloworld-api
 ```
+
+The command above should produce output similar to:
+
+``` bash
+$ sls create --template-url https://github.com/KumologicaHQ/serverless-templates/tree/master/helloworld-api --path helloworld-test
+Serverless: Generating boilerplate...
+Serverless: Downloading and installing "helloworld-api"...
+Serverless: Successfully installed "helloworld-api" 
+```
+
 This will create new directory: helloworld-api with following files:
 - hello-world-flow.json
 - package.json
 - serverless.yml
+
+**Install kumologica-serverless plugin**
+
+Once sample kumologica project has been created, run the following command in your terminal to install kumologica-serverless-plugin:
+
+``` bash
+serverless plugin install --name kumologica-serverless-plugin
+```
+
+Successful installation should produce output similar to below:
+
+``` bash
+$ serverless plugin install --name kumologica-serverless-plugin
+Serverless: Plugin not found in serverless registry, continuing to install
+Serverless: Installing plugin "kumologica-serverless-plugin@latest" (this might take a few seconds...)
+Serverless: Successfully installed "kumologica-serverless-plugin@latest"
+```
 
 ## Deployment
 
