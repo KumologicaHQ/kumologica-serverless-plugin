@@ -320,7 +320,6 @@ class KumologicaPlugin {
     if (fs.existsSync(LAMBDA_FILE)) {
       fs.removeSync(LAMBDA_FILE);
     }
-    rimraf.sync(path.join('.', 'node_modules'));
     fs.removeSync(`${DEPLOY_FLOW_NAME}`);
   }
 }
