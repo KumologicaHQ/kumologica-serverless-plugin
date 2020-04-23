@@ -55,7 +55,9 @@ Serverless: Successfully installed "kumologica-serverless-plugin@latest"
 ## Development
 
 Download [Kumologica Designer](https://kumologica.com/download.html) to edit flow, implement business logic and unit tests. 
+
 ![Kumologica Designer Screenshot](https://kumologica.com/docs/assets/img/designer-explainer.png)
+
 This is the only tool you will need to build serverless integrations to run on your cloud.
 No credit cards. No trials. Free to download and use it.
 
