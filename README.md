@@ -69,15 +69,17 @@ Before deployment to aws, add events into serverless.yml as you would do for aws
 has api gateway /hello defined. If you edited flow and implemented your own logic, this event is most likely not needed and should be removed from serverless.yml file.
 
 Kumologica flow may interact with several aws services. In such a case correct permissions must be added to policies that are assigned to lambda's role.
-If flow has ARNs of all aws resources provided in nodes properties, or nodes properties are referencing those ARNs via lambda's environment properties then kumologica-serverless plugin will automatically update those policies during deployment. To disable policies update add custom property inferIamPolicies into serverless.yml file and set it to false:
+If flow has ARNs of all aws resources provided in nodes properties, or nodes properties are referencing those ARNs via lambda's environment properties then kumologica-serverless plugin will automatically update those policies during deployment. 
+
+If flow has references to ARNs using variables or message then it is not possible to determine their values at deploy time. In those scenarios it is necessary to specify those resources and actions in serverless.yml file. In such a cases inferIamPolicies must be included in serverless.yml file and set to false, otherwise kumologica-serverless-plugin will throw error when processing deploy command.
+
+To disable policies update, add custom property inferIamPolicies into serverless.yml file and set it to false:
 
 ``` yaml
 custom:
    kumologica:
      inferIamPolicies: false # true by default
 ```
-
-If flow has references to ARNs using variables or message then it is not possible to determine their values at deploy time. In those scenarios it is necessary to specify those resources and actions in serverless.yml file. In such a cases inferIamPolicies must be included in serverless.yml file and set to false, otherwise kumologica-serverless-plugin will trow error when processing deploy command.
 
 **Test cases**
 
