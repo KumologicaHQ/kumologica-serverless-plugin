@@ -21,7 +21,7 @@ class KumologicaPlugin {
     this.inferIamPolicies = _.get(
       this.serverless, 
       'variables.service.custom.kumologica.inferIamPolicies', 
-      false);
+      true);
     
     this.excludeTest = _.get(
       this.serverless, 
@@ -104,8 +104,8 @@ class KumologicaPlugin {
   }
 
   //
-  // If inferIamPolicies is set to true then all relevant aws permissions are added
-  // to the iam role policies.
+  // If inferIamPolicies is set to true or not provided then all relevant aws 
+  // permissions are added to the iam role policies.
   // Each aws outbound note is inspected and correct actions and resources added to
   // the policies belonging to generated role.
   // The above only applies if aws resources are explicitly specifed as string values
@@ -115,7 +115,7 @@ class KumologicaPlugin {
   addFlowPolicies() {
 
     if (!this.inferIamPolicies) {
-      this.serverless.cli.log(`Skipping flow policies, inferIamPolicies not set or false`);
+      this.serverless.cli.log(`Skipping flow policies, inferIamPolicies set to false`);
       return;
     }
 
@@ -234,7 +234,7 @@ class KumologicaPlugin {
       value = key;
     
     } else {
-      throw new Error('Only String and Environment variables are supported sources of values. To use other types you must specify explicit role arn in function properties and set inferIamRoles=false.');
+      throw new Error('Only String and Environment variables are supported sources of values. To use other types you must specify explicit role arn in function properties and set inferIamPolicies=false.');
     }
     
     return value;
