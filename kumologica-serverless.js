@@ -16,7 +16,8 @@ class KumologicaPlugin {
     this.serverless = serverless;
     this.options = options;
     this.originalServicePath = this.serverless.config.servicePath;
-    this.fnName = this.pluckFnName(0); // get the first function that we found - TODO: Support for multi function needs to be added.
+    this.fnName = this.pluckFnName(0); // get the first function that we found - 
+    //TODO: Support for multi function needs to be added.
     
     this.inferIamPolicies = _.get(
       this.serverless, 
@@ -81,7 +82,7 @@ class KumologicaPlugin {
   }
 
   parseFlow() {
-    this.flow = this.readFlow();
+    this.flow = this.readFlow(this.fnName);
 
     if (this.excludeTest) {
       this.flow = this.flow.filter(f => f.z != "test.flow");
@@ -107,13 +108,12 @@ class KumologicaPlugin {
   // If inferIamPolicies is set to true or not provided then all relevant aws 
   // permissions are added to the iam role policies.
   // Each aws outbound note is inspected and correct actions and resources added to
-  // the policies belonging to generated role.
+  // thsle policies belonging to generated role.
   // The above only applies if aws resources are explicitly specifed as string values
   // in node properties or as references to lambda environment variables. In second case
   // the environment variables must be present in serverless.yml
   // 
   addFlowPolicies() {
-
     if (!this.inferIamPolicies) {
       this.serverless.cli.log(`Skipping flow policies, inferIamPolicies set to false`);
       return;
@@ -121,88 +121,121 @@ class KumologicaPlugin {
 
     this.serverless.cli.log(`Adding flow policies to iam role of function: ${this.fnName} ...`);
 
-    this.findLambdaRole(); 
-
     let nodes = this.flow.filter(node => this.validNodeType(node));
+    if (!nodes || !nodes.length) {
+      return;
+    }
+
+    let resources = {};
 
     for (var i=0; i<nodes.length; i++) {
 
       switch(nodes[i].type) {
         
         case 'Dynamo DB': 
-          let tableArn = this.mapValue(nodes[i].tableArnType, nodes[i].tableArn);
-          let tableParts = tableArn.split(":");
-          
-          if (!tableParts || tableParts.length != 6) {
-            throw new Error(`Invalid value of dynamo db table arn: ${tableArn}, looks like arn provided is not in valid arn format.`);
-          }
-
-          let tableName = tableParts[5].replace('table/', '');
-          this.updatePolicy(`KLDDB${tableName}`, `dynamodb:${nodes[i].operation}`, tableArn);
+          let tableArn = this.mapValue(nodes[i].tableArn);
+          this.addResourceAction(resources, `dynamodb:${nodes[i].operation}`, tableArn);
           break;
         
         case 'SQS':
-          let queueArn = this.mapValue(nodes[i].QueueUrlType, nodes[i].QueueArn);
-          let queueName = queueArn.split(":")[5];
-          this.updatePolicy(`KLSQS${queueName}`, `sqs:${nodes[i].operation}`, queueArn);
+          let queueArn = this.mapValue(nodes[i].QueueArn);
+          this.addResourceAction(resources, `sqs:${nodes[i].operation}`, queueArn);
           break;
 
         case 'SNS':
-          const topic = this.mapValue(nodes[i].publishTopicType, nodes[i].publishTopic);
-          this.updatePolicy(`KLSNS${topic}`, `sns:${nodes[i].operation}`, topic);
+          const topic = this.mapValue(nodes[i].publishTopic);
+          this.addResourceAction(resources, `sns:${nodes[i].operation}`, topic);
           break;
 
         case 'SES':
-          this.updatePolicy(`KLSES`, `ses:${nodes[i].operation}`, '*');
+          this.addResourceAction(resources, `ses:${nodes[i].operation}`, '*');
           break;
         
         case 'SSM':
-          const key = this.mapValue(nodes[i].KeyType, nodes[i].Key);
-          const ssmArn = `arn:aws:ssm:${AWS.config.region}:${AWS.config.accountId}:parameter/${key}`;
-          this.updatePolicy(`KLSSM${key}`, `ssm:${nodes[i].operation}`, ssmArn);
+          const key = this.mapValue(nodes[i].Key);
+          const ssmArn = '!Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/' +key;
+          this.addResourceAction(resources, `ssm:${nodes[i].operation}`, ssmArn);
           break;
       
         case 'S3':
-          let bucketName = this.mapValue(nodes[i].BucketType, nodes[i].Bucket);
+          const bucketName = this.mapValue(nodes[i].Bucket);
           const bucketArn = `arn:aws:s3:::${bucketName}/*`;
-          this.updatePolicy(`KLS3${bucketName}`, `s3:${nodes[i].operation}`, bucketArn);
+          this.addResourceAction(resources, `s3:${nodes[i].operation}`, bucketArn);
           break;
       
         case 'Cloudwatch':
-          let source = this.mapValue(nodes[i].SourceType, nodes[i].Source);
-          this.updatePolicy(`KLCWE${source}`, `event:${nodes[i].operation}`, source);
+          let source = this.mapValue(nodes[i].Source);
+          this.addResourceAction(resources, `event:${nodes[i].operation}`, source);
           break;
         
         case 'Rekognition':
-          this.updatePolicy(`KLR${nodes[i].CollectionId}`, `rekognition:${nodes[i].operation}`, nodes[i].CollectionId);
-          break;
+          const resource = this.rekognition.mapResource(nodes[i].operation, region, '*', nodes[i]);
+          this.addResourceAction(resources, `rekognition:${nodes[i].operation}`, resource);
+
+          if (['DetectModerationLabels', 
+              'DetectText', 
+              'DetectLabels', 
+              'DetectFaces', 
+              'IndexFaces', 
+              'RecognizeCelebrities', 
+              'SearchFacesByImage', 
+              'StartStreamProcessor',
+              'StopStreamProcessor'].includes(nodes[i].operation)) {
+
+            const bucketName = this.mapValue(nodes[i].Image);
+            const bucketArn = `arn:aws:s3:::${bucketName}/*`;
+            this.addResourceAction(resources, `s3:Get*`, bucketArn);
+            this.addResourceAction(resources, `s3:List*`, bucketArn);
+          }
+        break;
 
         default:
           throw new Error(`Unsupported node type: ${node[i].type}, unable to generate IAM Policy.`); 
       }
     }
-  }
-
-  // 
-  // This can only be called once cloud formation template has been
-  // generated by serverless 
-  //
-  findLambdaRole() {
-    this.lambdaRole = 
-      this.serverless
+    
+    this.serverless
           .service
           .provider
           .compiledCloudFormationTemplate
           .Resources
-          .IamRoleLambdaExecution;
-        
-    if (!this.lambdaRole) {
-      throw new Error('Unable to find Lambda Role in compiled cloud formation template.');
-    }
+          .IamRoleLambdaExecution
+          .Properties
+          .Policies.push(this.createPolicy(resources));
   }
 
-  readFlow() {
-    const nodes = JSON.parse(fs.readFileSync(`${this.fnName}.json`));
+  /**
+   * Creates Kumologica policy based on passed resources array.
+   * Policy contains statements to allows specified actions 
+   * for each resource in array.
+   * 
+   * @param {array} resources 
+   */
+  createPolicy(resources) {
+    
+    let policy = {
+      PolicyName: "KumologicaPolicy",
+      PolicyDocument: {
+        Version: "2012-10-17",
+        Statement: []
+      }
+    };
+
+    policy.PolicyDocument.Statement = 
+      Object.entries(resources)
+            .map(([resource, actions]) => (
+              {
+                Effect: "Allow", 
+                Resource: [JSON.parse(resource)], 
+                Action: actions
+              }
+            ));    
+
+    return policy;
+  }
+
+  readFlow(flowName) {
+    const nodes = JSON.parse(fs.readFileSync(`${flowName}.json`));
     
     if (!nodes || !Array.isArray(nodes) || nodes.length == 0) {
       throw new Error('Unable to read and parse flow file, flow file appears corrupted.');
@@ -221,57 +254,44 @@ class KumologicaPlugin {
   // in these cases its impossible to determine the value 
   // and role must be explicitly defined in serverless.yml
   //
-  mapValue(type, key) {
+  mapValue(key) {
     let value;
-    
-    if (type && type == 'caenv') {
-      value = this.env[key];
+    let keyValue = key.replace(/\s+/g, '');
+
+    if (keyValue.startsWith("${env.")) {
+      keyValue = keyValue.replace("${env.", "").replace("}", "");
+      value = this.env[keyValue];
       if (!value) {
-        throw new Error(`Missing Environment variable: ${key}`);
+        throw new Error(`Missing Environment variable: ${keyValue}`);
       }
     
-    } else if (!type || type == 'str') {
-      value = key;
+    } else if (key.startsWith("${")) {
+      throw new Error('Only literal string and Environment variable references ${env.} are supported sources of values. To use other types you must specify explicit role and policies and set inferIamPolicies=false in serverless.yml');
     
     } else {
-      throw new Error('Only String and Environment variables are supported sources of values. To use other types you must specify explicit role arn in function properties and set inferIamPolicies=false.');
+      value = key;
     }
-    
     return value;
   }
 
-  // 
-  // Function handles policy changes for specific resource:
-  // - creates new policy for resource if not found
-  // - updates existing resource policy (if found) with new permissions 
-  //
-  updatePolicy(policyName, action, resource) {
-    policyName = policyName.replace('/', '-');
-    let policy = jp.query(this.lambdaRole.Properties, `Policies[?(@.PolicyName=='${policyName}')]`);    
-    
-    if (policy.length == 1) {
-      policy[0].PolicyDocument.Statement[0].Action.push(action);
-    
+  /**
+   * Function adds new action for specified resource or 
+   * instantiates new resource with action if not yet provided
+   * 
+   * @param {array} resources the buffer of resource actions (array)
+   * @param {String} action Specific action (f.e. s3:GetObject)
+   * @param {Object} resource Resource arn or formula (Sub, Ref ...) 
+   */
+  addResourceAction(resources, action, resource) {
+    const resourceString = JSON.stringify(resource);
+    const actions = resources[resourceString];
+    if (!actions) {
+      resources[resourceString] = [action];
     } else {
-      this.lambdaRole.Properties.Policies.push(
-        this.outputPolicy(policyName, action, resource));
+      if (!actions.includes(action)) {
+        actions.push(action);
+      }  
     }
-  }
-
-  outputPolicy(policyName, action, resource) {
-    return {
-      PolicyName: policyName,
-      PolicyDocument: {
-        Version: '2012-10-17',
-        Statement: [
-          {
-            Action: [action],
-            Resource: resource,
-            Effect: 'Allow'
-          }
-        ]
-      }
-    };
   }
 
   generateLambdaContent() {
