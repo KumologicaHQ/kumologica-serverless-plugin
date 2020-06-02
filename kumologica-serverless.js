@@ -2,9 +2,9 @@
 const _ = require('lodash');
 const fs = require('fs-extra');
 const path = require('path');
-const jp = require('jsonpath');
 const spawnSync = require('child_process').spawnSync;
 const rimraf = require('rimraf');
+const jsonata = require('jsonata');
 
 const LAMBDA_NAME = 'lambda';
 const LAMBDA_FILE = `${LAMBDA_NAME}.js`;
@@ -18,6 +18,7 @@ class KumologicaPlugin {
     this.originalServicePath = this.serverless.config.servicePath;
     this.fnName = this.pluckFnName(0); // get the first function that we found - 
     //TODO: Support for multi function needs to be added.
+    this.fnNames = Object.keys(this.functions);
     
     this.inferIamPolicies = _.get(
       this.serverless, 
@@ -33,13 +34,10 @@ class KumologicaPlugin {
 
     this.hooks = {
       'before:package:createDeploymentArtifacts': () => {
-        this.parseFlow();
-        this.addLambdaFile();
-        this.runNpm();
-        this.packageLambda();
-      },
+        this.createArtefacts();
+     },
       'before:package:compileFunctions': () => {
-        this.attachHandlerToFunction();
+        this.attachHandlerToFunction(this.fnName);
       },
       'after:package:createDeploymentArtifacts': () => {
         this.cleanup();
@@ -64,6 +62,13 @@ class KumologicaPlugin {
     }
   }
 
+  createArtefacts() {
+    this.parseFlow();
+    this.addLambdaFile();
+    this.runNpm();
+    this.packageLambda();
+  }
+
   runNpm() {
     this.serverless.cli.log(`Running npm build ...`);
     this.runCommand('npm', ['install', '--production']);
@@ -73,11 +78,11 @@ class KumologicaPlugin {
     rimraf.sync(path.join('.', 'node_modules', 'aws-sdk'));
   }
 
-  attachHandlerToFunction() {
+  attachHandlerToFunction(functionName) {
     this.serverless.cli.log(
-      `Attaching handler to function: ${this.fnName} ...`
+      `Attaching handler to function: ${functionName} ...`
     );
-    let fnObject = this.serverless.service.getFunction(this.fnName);
+    let fnObject = this.serverless.service.getFunction(functionName);
     fnObject.handler = `${LAMBDA_NAME}.${LAMBDA_HANDLER}`;
   }
 
@@ -244,35 +249,41 @@ class KumologicaPlugin {
     return nodes;
   }
 
-  // 
-  // Function allows the storage of aws resource identifier (arn or other)
-  // in either:
-  // - string property - value returned as is (key input)
-  // - env property    - key input is a key to reference environment variable.
-  //                     if env variables got key missing then error is returned
-  // if var or msg properties are used then error is returned, 
-  // in these cases its impossible to determine the value 
-  // and role must be explicitly defined in serverless.yml
-  //
-  mapValue(key) {
-    let value;
-    let keyValue = key.replace(/\s+/g, '');
+/**
+ * This is dynamic expression evaluation function that uses jsonata. 
+ * It is simplified version of evaluateDynamicField function from runtime util.js. 
+ * The version below only supports environment variables in expressions. 
+ * 
+ * If any error occurs during evaluation or evaluation returns no value 
+ * the original value (key) is returned
+ * 
+ * @param {String} value - either literal string or jsonata expression with env reference
+ */
+mapValue(value) {
 
-    if (keyValue.startsWith("${env.")) {
-      keyValue = keyValue.replace("${env.", "").replace("}", "");
-      value = this.env[keyValue];
-      if (!value) {
-        throw new Error(`Missing Environment variable: ${keyValue}`);
-      }
-    
-    } else if (key.startsWith("${")) {
-      throw new Error('Only literal string and Environment variable references ${env.} are supported sources of values. To use other types you must specify explicit role and policies and set inferIamPolicies=false in serverless.yml');
-    
-    } else {
-      value = key;
-    }
-    return value;
+  if (!value) {
+    return value; // nothing to evaluate
   }
+
+  // data contains all objects for sourcing data for expression:
+  // in plugin case only env are supported
+  var data = {};
+  data.env = this.env;
+
+  let response;
+  try {
+    let expression = jsonata(value);
+    response = expression.evaluate(data);
+
+    if (!response) {
+      response = value;
+    }
+  } catch (Error) {
+    response = value;
+  }
+
+  return response;
+}
 
   /**
    * Function adds new action for specified resource or 

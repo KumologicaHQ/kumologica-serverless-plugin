@@ -4,8 +4,14 @@
   "copyright": "Copyright 2020 Kumologica Pty Ltd",
   "author": "Kumologica Pty Ltd, contact@kumologica.com",
   "homepage": "https://github.com/KumologicaHQ/kumologica-serverless-plugin",
-  "keywords": ["kumologica", "serverless", "aws", "lambda", "serverless-plugin"],
-  "version": "1.0.7",
+  "keywords": [
+    "kumologica",
+    "serverless",
+    "aws",
+    "lambda",
+    "serverless-plugin"
+  ],
+  "version": "1.0.8",
   "description": "Provides Serverless support for Kumologica Flows",
   "main": "kumologica-serverless.js",
   "scripts": {
@@ -15,7 +21,7 @@
   "dependencies": {
     "child_process": "^1.0.2",
     "fs-extra": "^8.1.0",
-    "jsonpath": "^1.0.2",
+    "jsonata": "1.6.5",
     "lodash": "^4.17.15",
     "path": "^0.12.7",
     "rimraf": "^3.0.2"
