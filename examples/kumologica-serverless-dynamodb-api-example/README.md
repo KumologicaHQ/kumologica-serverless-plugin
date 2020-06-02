@@ -7,10 +7,6 @@ There are a few prerequisites you need to install and configure:
 
 If you already have these prerequisites setup you can skip ahead to Create a new service from a Template.
 
-<div class="alert alert-info"> 
-This example shows default capabilities of the serverless plugin and templates that expose hello world api and this example does not provide any code, all artefacts will be created by template and plugin.
-</div>
-
 ## Install Dependencies
 
 **Install Node.js and NPM**
@@ -50,6 +46,14 @@ SDK: 2.3.0
 Components: 2.29.3
 ```
 
+**Install kumologica-serverless plugin**
+
+Run the following command in your terminal
+
+```
+serverless plugin install --name kumologica-serverless
+```
+
 ## Create new kumologica service from a Template
 
 Use the Serverless Framework open-source CLI to create a new Service:
@@ -68,14 +72,6 @@ After lambda file is created by plugin, the npm install is called and all node m
 If you are interested, you can always unzip the artefact file within the `.serverless` directory to see the effect of the plugin or see the final version of cloud formation scripts generated.
 
 </div>
-
-**Install kumologica-serverless plugin**
-
-Run the following command in your terminal to install dependant node modules. This command needs to be run only once.
- 
-```
-serverless plugin install --name kumologica-serverless-plugin
-```
 
 ## Edit your Flow
 
@@ -100,46 +96,23 @@ To use specific profile and region:
 ```
 sls deploy -v --profile {YOUR PROFILE NAME} --region {YOUR REGION NAME}
 ```
-The output should be similar to:
-
-```bash
-Serverless: Stack update finished...
-Service Information
-service: helloworld-api
-stage: dev
-region: ap-southeast-2
-stack: helloworld-api-dev
-resources: 11
-api keys:
-  None
-endpoints:
-  GET - https://xxxxxxxxxx.execute-api.ap-southeast-2.amazonaws.com/dev/hello
-functions:
-  helloworld-flow: helloworld-api-dev-helloworld-flow
-layers:
-  None
-```
-
-Make a note of endpoint displayed, this url can be used to test deployment.
+Once deployment make a note of api gateway displayed in deploy output response. This url can be used to test deployment.
 
 ## Test your service
 
-Default kumologica flow deployed to AWS exposes GET /dev/hello api. Serverless creates "dev" stage by default.
+Default kumologica flow deployed to AWS exposes GET /dev/hello api. 
 Replace the URL in the following curl command with your returned endpoint URL, which you can find in the sls deploy output, to hit your URL endpoint.
 
 ```
-$ curl -X GET https://{api-gw-id}.execute-api.{your_region}.amazonaws.com/dev/hello
-```
+$ curl -X GET https://xxxxxxxxxx.execute-api.{your_region}.amazonaws.com/dev/hello
 
-the output of above command should look like:
+$ curl -H "Content-Type: application/json" -X POST -d '{"userId":"user1","name": "Bob Smith"}' https://05ccffiraa.execute-api.us-east-1.amazonaws.com/dev/users
 
-```bash
-{"hello": "world"}
 ```
 
 ## Remove your Service
 
-If at any point you no longer need your Service, you can run the following command to remove the function, event and resources that were created.
+If at any point you no longer need your Service, you can run the following command to remove the Functions, Events and Resources that were created.
 
 ```
 sls remove

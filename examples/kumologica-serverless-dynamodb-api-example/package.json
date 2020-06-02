@@ -1,0 +1,20 @@
+{
+  "name": "kumologica-serverless-dynamodb-api-example",
+  "version": "1.0.0",
+  "description": "kumologica flow",
+  "files": [
+    "kumologica-dynamodb-api-flow.json",
+    "node_modules/**/*"
+  ],
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@kumologica/runtime": "^0.9"
+  },
+  "devDependencies": {
+    "aws-sdk": "^2.513.0",
+    "kumologica-serverless-plugin": "latest"
+  }
+}

@@ -1,0 +1,60 @@
+service: kumologica-dynamodb-api-example
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  memorySize: 512 # Overwrite the default memory size. Default is 1024
+  timeout: 10     # The default is 6 seconds. Note: API Gateway current maximum is 30 seconds
+  deploymentPrefix: kumologica-sls # The S3 prefix under which deployed artifacts should be stored.
+
+functions:
+  kumologica-dynamodb-api-flow:
+    dependsOn: # optional, appends these additional resources to the 'DependsOn' list
+      - UsersDynamoDbTable
+    # add all events required by inboud nodes in the flow.
+    environment:
+      TABLE: !GetAtt UsersDynamoDbTable.Arn
+    events:
+      - http:
+          path: /user/{userId}
+          method: get
+      - http:
+          path: /user/{userId}
+          method: delete
+      - http:
+          path: /user
+          method: get
+      - http:
+          path: /user
+          method: put
+custom:
+  kumologica:
+    inferIamPolicies: true # true by default
+
+plugins:
+  - kumologica-serverless-plugin
+
+resources:
+  Resources:
+    UsersDynamoDbTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Delete
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: "userId"
+            AttributeType: "S"   
+        KeySchema:
+          -
+            AttributeName: "userId"
+            KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: UsersTable
+  Outputs:
+    UsersDynamoDbTable:
+      Value: !GetAtt UsersDynamoDbTable.Arn
+      Export:
+        Name: UsersDynamoDbTableArn
+
