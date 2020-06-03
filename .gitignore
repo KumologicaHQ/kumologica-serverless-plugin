@@ -3,3 +3,4 @@ lambda*.zip
 .kumologica
 .serverless
 deploy
+examples/*/package-lock.json
