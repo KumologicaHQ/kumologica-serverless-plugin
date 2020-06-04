@@ -5,7 +5,7 @@ Set of examples of kumologica flows managed by kumologica serverless plugin. Eac
 | Example | 
 |:--------------------------|
 | [Hello World - API](https://github.com/KumologicaHQ/kumologica-serverless-plugin/tree/master/examples/hello-world-api) <br /> The hello world example exposing kumologica flow as api endpoint |
-| [Dynamo DB - API](https://github.com/KumologicaHQ/kumologica-serverless-plugin/tree/master/examples/hello-world-api) <br /> Dynamo DB CRUD operations of kumologica flow exposed as API. The DynamoDB table is created inside serverless.yml file and arn attribute reference is passed to flow's environment variable. This demo uses default kumologica plugin behaviour: automatically creates iam policy and attaches it to the role created by serverless. |
+| [Dynamo DB - API](https://github.com/KumologicaHQ/kumologica-serverless-plugin/tree/master/examples/dynamodb-api) <br /> Dynamo DB CRUD operations of kumologica flow exposed as API. The DynamoDB table is created inside serverless.yml file and arn attribute reference is passed to flow's environment variable. This demo uses default kumologica plugin behavior: automatically creates iam policy and attaches it to the role created by serverless. |
 
 # About Kumologica
 
