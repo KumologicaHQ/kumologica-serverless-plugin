@@ -1,90 +1,46 @@
-# Quickstart
+# Dependencies
 
 There are a few prerequisites you need to install and configure:
 
-- Install Node.js 6.x or later on your local machine
-- Install the Serverless Framework open-source CLI version 1.47.0 or later
+- [NPM](https://www.npmjs.com/get-npm)
+- [Serverless](https://serverless.com/framework/docs/getting-started/)
+- [Kumologica Designer](https://kumologica.com/download.html)
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html)
+- [AWS Profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 
-If you already have these prerequisites setup you can skip ahead to Create a new service from a Template.
+If you already have these prerequisites setup you can skip ahead to run example.
 
-## Install Dependencies
+# Install 
 
-**Install Node.js and NPM**
-
-- Follow these [installation instructions](https://nodejs.org/en/download/)
-- You should be able to run node -v from your command line and get a result like this...
-
-```
-$ node -v
-vx.x.x
-```
-
-You should also be able to run npm -v from your command line and should see...
-
-```
-$ npm -v
-x.x.x
-```
-
-**Install serverless framework**
-
-Follow instructions from [Serverless getting-started](https://www.serverless.com/framework/docs/getting-started/)
-to install serverless framework.
-
-To verify successful installation, run following command:
-```bash
-$ sls --version
-```
-
-Output of the command should look similar to below:
+Checkout source code of this example into your local directory:
 
 ```bash
-$ sls --version
-Framework Core: 1.67.3
-Plugin: 3.6.6
-SDK: 2.3.0
-Components: 2.29.3
-```
-
-**Install kumologica-serverless plugin**
-
-Run the following command in your terminal
+git clone https://github.com/KumologicaHQ/kumologica-serverless-plugin.git
+cd kumologica-serverless-plugin/examples/dynamodb-api/
 
 ```
-serverless plugin install --name kumologica-serverless
-```
 
-## Create new kumologica service from a Template
+Run the following command in your terminal to install kumologica-serverless-plugin
 
-Use the Serverless Framework open-source CLI to create a new Service:
-
-```
-sls create \
-  --template-url https://github.com/KumologicaHQ/serverless-templates/tree/master/helloworld-api \
-  --path helloworld-api
+```bash
+serverless plugin install --name kumologica-serverless-plugin
 ```
 
 <div class="alert alert-info"> 
-Kumologica projects can be deployed on different serverless platforms. As a consequence, it is not required to provide a lambda file or specify the `handler` key within your `serverless.yml` file. The plugin `kumologica-serverless` will take care of those details for you.
+Kumologica projects can be deployed on different serverless platforms. As a consequence, it is not required to provide a lambda file or specify the `handler` key within your `serverless.yml` file. The `kumologica-serverless-plugin` will take care of those details for you.
 
 After lambda file is created by plugin, the npm install is called and all node modules specified in package.json are installed. All modules are deleted at the end of deploy process.
 
-If you are interested, you can always unzip the artefact file within the `.serverless` directory to see the effect of the plugin or see the final version of cloud formation scripts generated.
+If you are interested, you can always check the `.serverless` directory to see the effect of the plugin or see the final version of cloud formation scripts generated.
 
 </div>
 
-## Edit your Flow
+# Edit your Flow
 
 Install [Kumologica Designer](https://kumologica.com/download.html) to open and modify your flow.
-The default flow handles api call GET /dev/hello and returns hello world. Kumologica designer allows
-implementation of any integration flow providing rich set of outbound nodes and additional repository of 
-contribution flows.
+Kumologica designer allows implementation of any integration flow providing rich set of outbound nodes and additional repository of contribution flows. Kumologica Designer is available for free on Windows or Mac.
 
-Kumologica Designer is available for free on Windows or Mac.
-
-## Deploy your flow
-
-Use these commands to deploy your service for the first time and after you make changes to your kumologica flow, Events or Environment variables in serverless.yml.
+# Deploy your flow
 
 To use default profile and region:
 
@@ -92,27 +48,64 @@ To use default profile and region:
 sls deploy -v
 ```
 
-To use specific profile and region:
+To use specific profile and region (Note that `--aws-region` switch only works if AWS_PROFILE is not set.)
+
+``` bash
+export AWS_PROFILE={your profile}
+sls deploy -v --region {YOUR REGION NAME}
 ```
-sls deploy -v --profile {YOUR PROFILE NAME} --region {YOUR REGION NAME}
-```
-Once deployment make a note of api gateway displayed in deploy output response. This url can be used to test deployment.
+or
 
-## Test your service
-
-Default kumologica flow deployed to AWS exposes GET /dev/hello api. 
-Replace the URL in the following curl command with your returned endpoint URL, which you can find in the sls deploy output, to hit your URL endpoint.
-
-```
-$ curl -X GET https://xxxxxxxxxx.execute-api.{your_region}.amazonaws.com/dev/hello
-
-$ curl -H "Content-Type: application/json" -X POST -d '{"userId":"user1","name": "Bob Smith"}' https://05ccffiraa.execute-api.us-east-1.amazonaws.com/dev/users
-
+```bash
+unset AWS_PROFILE
+sls deploy -v --aws-profile {YOUR PROFILE NAME} --region {YOUR REGION NAME}
 ```
 
-## Remove your Service
+Note all reported api endpoints:
 
-If at any point you no longer need your Service, you can run the following command to remove the Functions, Events and Resources that were created.
+```bash
+Serverless: Stack update finished...
+Service Information
+...
+endpoints:
+  GET - https://{apigw-id}.execute-api.{region}.amazonaws.com/dev/user/{userId}
+  DELETE - https://{apigw-id}.execute-api.{region}.amazonaws.com/dev/user/{userId}
+  GET - https://{apigw-id}.execute-api.{region}.amazonaws.com/dev/user
+  PUT - https://{apigw-id}.execute-api.{region}.amazonaws.com/dev/user
+```
+
+# Test your service
+
+DynamoDB example exposes 4 endpoints to demonstrate CRUD operations exposed as api.
+Run commands provided below to test each api.
+
+**1. Create item**
+
+```bash
+curl -X PUT 'https://{apigw-id}.execute-api.{region}.amazonaws.com/dev/user' \
+-H 'Content-Type: application/json' \
+-d '{"userId": "user7","name": "Alice Smith"}'
+```
+
+**2. Get single item**
+```bash
+curl -X GET 'https://{apigw-id}.execute-api.{region}.amazonaws.com/dev/user/user7' 
+```
+
+**3. Get all items**
+```bash
+curl -X GET 'https://{apigw-id}.execute-api.{region}.amazonaws.com/dev/user' 
+```
+
+**4. Delete item**
+
+```bash
+curl -X DELETE 'https://{apigw-id}.execute-api.{region}.amazonaws.com/dev/user/user7' 
+```
+
+# Remove your Service
+
+To remove flow from aws account and its corresponding resources:
 
 ```
 sls remove

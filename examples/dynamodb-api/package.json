@@ -15,6 +15,6 @@
   },
   "devDependencies": {
     "aws-sdk": "^2.513.0",
-    "kumologica-serverless-plugin": "latest"
+    "kumologica-serverless-plugin": "^1.0.8"
   }
 }
