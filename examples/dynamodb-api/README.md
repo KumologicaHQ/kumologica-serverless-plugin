@@ -1,3 +1,17 @@
+Demo presenting kumologica flow exposing CRUD operations on dynamo db using api.
+
+- [Dependencies](#dependencies)
+- [Installation](#installation)
+- [Edit your flow](#edit-your-flow)
+- [Deploy your flow](#deploy-your-flow)
+- [Test your flow](#test-your-flow)
+  * [Create item](#create-item)
+  * [Get single item](#get-single-item)
+  * [Get all items](#get-all-items)
+  * [Delete item](#delete-item)
+- [Remove your flow](#remove-your-flow)
+- [About Kumologica](#about-kumologica)
+
 # Dependencies
 
 There are a few prerequisites you need to install and configure:
@@ -10,7 +24,7 @@ There are a few prerequisites you need to install and configure:
 
 If you already have these prerequisites setup you can skip ahead to run example.
 
-# Install 
+# Installation 
 
 Checkout source code of this example into your local directory:
 
@@ -26,29 +40,28 @@ Run the following command in your terminal to install kumologica-serverless-plug
 serverless plugin install --name kumologica-serverless-plugin
 ```
 
-<div class="alert alert-info"> 
 Kumologica projects can be deployed on different serverless platforms. As a consequence, it is not required to provide a lambda file or specify the `handler` key within your `serverless.yml` file. The `kumologica-serverless-plugin` will take care of those details for you.
 
 After lambda file is created by plugin, the npm install is called and all node modules specified in package.json are installed. All modules are deleted at the end of deploy process.
 
 If you are interested, you can always check the `.serverless` directory to see the effect of the plugin or see the final version of cloud formation scripts generated.
 
-</div>
-
-# Edit your Flow
+# Edit your flow
 
 Install [Kumologica Designer](https://kumologica.com/download.html) to open and modify your flow.
 Kumologica designer allows implementation of any integration flow providing rich set of outbound nodes and additional repository of contribution flows. Kumologica Designer is available for free on Windows or Mac.
 
 # Deploy your flow
 
-To use default profile and region:
+Provided serverless.yml file defines all required resources: flow definition and dynamo db table that flow depends on.
+
+To use default profile and region for deployment:
 
 ```
 sls deploy -v
 ```
 
-To use specific profile and region (Note that `--aws-region` switch only works if AWS_PROFILE is not set.)
+To use specific profile and region (Note that `--aws-region` parameter only works if AWS_PROFILE is not set.)
 
 ``` bash
 export AWS_PROFILE={your profile}
@@ -74,12 +87,12 @@ endpoints:
   PUT - https://{apigw-id}.execute-api.{region}.amazonaws.com/dev/user
 ```
 
-# Test your service
+# Test your flow
 
 DynamoDB example exposes 4 endpoints to demonstrate CRUD operations exposed as api.
 Run commands provided below to test each api.
 
-**1. Create item**
+## Create item
 
 ```bash
 curl -X PUT 'https://{apigw-id}.execute-api.{region}.amazonaws.com/dev/user' \
@@ -87,25 +100,24 @@ curl -X PUT 'https://{apigw-id}.execute-api.{region}.amazonaws.com/dev/user' \
 -d '{"userId": "user7","name": "Alice Smith"}'
 ```
 
-**2. Get single item**
+## Get single item
 ```bash
 curl -X GET 'https://{apigw-id}.execute-api.{region}.amazonaws.com/dev/user/user7' 
 ```
 
-**3. Get all items**
+## Get all items
 ```bash
 curl -X GET 'https://{apigw-id}.execute-api.{region}.amazonaws.com/dev/user' 
 ```
-
-**4. Delete item**
+## Delete item
 
 ```bash
 curl -X DELETE 'https://{apigw-id}.execute-api.{region}.amazonaws.com/dev/user/user7' 
 ```
 
-# Remove your Service
+# Remove your flow
 
-To remove flow from aws account and its corresponding resources:
+To remove flow and its corresponding resources from aws account:
 
 ```
 sls remove
