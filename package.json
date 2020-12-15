@@ -11,7 +11,7 @@
     "lambda",
     "serverless-plugin"
   ],
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Provides Serverless support for Kumologica Flows",
   "main": "kumologica-serverless.js",
   "scripts": {
@@ -22,7 +22,7 @@
     "child_process": "^1.0.2",
     "fs-extra": "^8.1.0",
     "jsonata": "1.6.5",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "path": "^0.12.7",
     "rimraf": "^3.0.2"
   }
