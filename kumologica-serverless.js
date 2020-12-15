@@ -143,7 +143,7 @@ class KumologicaPlugin {
           break;
         
         case 'SQS':
-          let queueArn = this.mapValue(nodes[i].QueueArn);
+          let queueArn = this.mapQueueUrlToArn(this.mapValue(nodes[i].QueueUrl));
           this.addResourceAction(resources, `sqs:${nodes[i].operation}`, queueArn);
           break;
 
@@ -207,6 +207,17 @@ class KumologicaPlugin {
           .IamRoleLambdaExecution
           .Properties
           .Policies.push(this.createPolicy(resources));
+  }
+
+  mapQueueUrlToArn(queueUrl) {
+    // https://sqs.region.amazonaws.com/account/queuename
+    let urlparts = queueUrl.split('/');
+    if (urlparts.length != 5) {
+      throw new Error(`Unable to handle queue url: ${queueUrl} expected format https://sqs.region.amazonaws.com/account/queuename`);
+    }
+
+    let region = urlparts[2].split('.')[1];
+    return `arn:aws:sqs:${region}:${urlparts[3]}:${urlparts[4]}`;   
   }
 
   /**
